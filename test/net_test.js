@@ -14,7 +14,18 @@ var net_config = {
     host: '[::1]'
 };
 
-if (os.type == 'Windows' && os.version < "6.0")
+var has_ipv6 = false;
+
+var ni = os.networkInfo();
+
+for (var n in ni) {
+    ni[n].forEach((c) => {
+        if (c.family == 'IPv6')
+            has_ipv6 = true;
+    });
+}
+
+if (!has_ipv6)
     net_config = {
         family: net.AF_INET,
         address: '127.0.0.1',
@@ -297,6 +308,7 @@ describe("net", () => {
             function accept2(s) {
                 var c = s.accept();
                 coroutine.start(recv2, c, "1234", 1);
+                coroutine.sleep(10);
                 coroutine.start(recv2, c, "4567", 2);
             }
 
@@ -310,6 +322,7 @@ describe("net", () => {
 
             var c1 = new net.Socket();
             c1.connect('127.0.0.1', 8084 + base_port);
+            coroutine.sleep(100);
 
             c1.send('1234');
             coroutine.sleep(10);
@@ -351,7 +364,7 @@ describe("net", () => {
         var t2 = new Date();
 
         assert.greaterThan(t2 - t1, 49);
-        assert.lessThan(t2 - t1, 100);
+        assert.lessThan(t2 - t1, 500);
 
         var c2 = new net.Socket();
         c2.timeout = 50;
@@ -362,7 +375,7 @@ describe("net", () => {
         var t2 = new Date();
 
         assert.greaterThan(t2 - t1, 40);
-        assert.lessThan(t2 - t1, 100);
+        assert.lessThan(t2 - t1, 500);
     });
 
     it("bind same port", () => {
@@ -497,7 +510,7 @@ describe("net", () => {
         assert.equal(no1, os.memoryUsage().nativeObjects.objects);
     });
 
-    if (global.full_test)
+    if (full_test)
         describe("Smtp", () => {
             var s;
 

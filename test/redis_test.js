@@ -6,6 +6,8 @@ var db = require('db');
 var encoding = require('encoding');
 var coroutine = require('coroutine');
 
+var test_util = require('test_util');
+
 var dbs = "redis://127.0.0.1";
 
 var rdb = db.open(dbs);
@@ -558,7 +560,7 @@ describe("redis", () => {
 
             rdb1.pub("test.ch1", "test value 1");
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(c, "test.ch1");
             assert.equal(m, "test value 1");
             assert.equal(n1, 1);
@@ -567,7 +569,7 @@ describe("redis", () => {
 
             rdb1.pub("test.ch1", "test value 1");
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(n1, 2);
         });
 
@@ -581,21 +583,21 @@ describe("redis", () => {
 
             rdb1.pub("test.ch2", "test value 2");
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(c, "test.ch2");
             assert.equal(m, "test value 2");
             assert.equal(n2, 1);
 
             rdb1.pub("test.ch3", "test value 3");
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(c, "test.ch3");
             assert.equal(m, "test value 3");
             assert.equal(n1, 1);
 
             rdb1.pub("test.ch1", "test value 1");
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(n1, 2);
         });
 
@@ -604,7 +606,7 @@ describe("redis", () => {
             rdb.unsub("test.ch1");
             rdb1.pub("test.ch1", "test value 4");
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(m, "test value 1");
             assert.equal(n1, 0);
 
@@ -613,7 +615,7 @@ describe("redis", () => {
             rdb1.pub("test.ch2", "test value 5");
             rdb1.pub("test.ch3", "test value 6");
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(m, "test value 1");
             assert.equal(n1, 0);
         });
@@ -624,7 +626,7 @@ describe("redis", () => {
 
             rdb1.pub("test.ch100", "test value 100");
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(c, "test.ch100");
             assert.equal(m, "test value 100");
             assert.equal(p, "test.*");
@@ -636,7 +638,7 @@ describe("redis", () => {
             rdb.unpsub("test.*");
             rdb1.pub("test.ch200", "test value 200");
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(c, "test.ch100");
             assert.equal(m, "test value 100");
             assert.equal(p, "test.*");
@@ -656,41 +658,48 @@ describe("redis", () => {
             assert.throws(() => {
                 rdb1.command("xxxxx");
             });
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(err_num, 0);
 
             rdb.onsuberror = my_err;
             rdb.close();
-            coroutine.sleep(100);
+            coroutine.sleep(200);
             assert.equal(err_num, 1);
         });
 
         it("Memory Leak detect", () => {
             rdb = undefined;
             GC();
-            var no1 = os.memoryUsage().nativeObjects.objects;
+            coroutine.sleep(200);
+
+            var no1 = test_util.countObject('Redis');
+            var no2 = test_util.countObject('Socket');
 
             rdb = db.open(dbs);
 
-            assert.equal(no1 + 3, os.memoryUsage().nativeObjects.objects);
+            assert.equal(no1 + 1, test_util.countObject('Redis'));
+            assert.equal(no2 + 1, test_util.countObject('Socket'));
 
             rdb.sub("test.ch1", subf1);
 
-            coroutine.sleep(100);
+            coroutine.sleep(200);
 
             GC();
-            assert.equal(no1 + 3, os.memoryUsage().nativeObjects.objects);
+            assert.equal(no1 + 1, test_util.countObject('Redis'));
+            assert.equal(no2 + 1, test_util.countObject('Socket'));
 
             rdb.close();
-            coroutine.sleep(100);
+            coroutine.sleep(200);
 
             GC();
-            assert.equal(no1 + 1, os.memoryUsage().nativeObjects.objects);
+            assert.equal(no1 + 1, test_util.countObject('Redis'));
+            assert.equal(no2, test_util.countObject('Socket'));
 
             rdb = undefined;
 
             GC();
-            assert.equal(no1, os.memoryUsage().nativeObjects.objects);
+            assert.equal(no1, test_util.countObject('Redis'));
+            assert.equal(no2, test_util.countObject('Socket'));
         });
 
     });

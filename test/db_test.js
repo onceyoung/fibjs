@@ -151,7 +151,7 @@ describe("db", () => {
                 a = 1;
             })
             for (var i = 0; i < 1000 && a == 0; i++)
-                conn.execute("select 100;", 100);
+                conn.execute("select count(*) from test");
             assert.equal(a, 1);
         });
     }
@@ -194,7 +194,7 @@ describe("db", () => {
         });
     });
 
-    if (global.full_test) {
+    if (full_test) {
         describe("mysql", () => {
             _test('mysql://root@localhost/test');
         });

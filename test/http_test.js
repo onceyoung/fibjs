@@ -725,6 +725,7 @@ describe("http", () => {
             var req = get_response();
             assert.equal(req.status, 200);
 
+            coroutine.sleep(100);
             assert.deepEqual(getStats(hdr), {
                 "total": 1,
                 "pendding": 0,
@@ -742,6 +743,7 @@ describe("http", () => {
             var req = get_response();
             assert.equal(req.status, 400);
 
+            coroutine.sleep(100);
             assert.equal(err_400, 1);
             assert.deepEqual(getStats(hdr), {
                 "total": 2,
@@ -760,6 +762,7 @@ describe("http", () => {
             var req = get_response();
             assert.equal(req.status, 404);
 
+            coroutine.sleep(100);
             assert.equal(err_404, 1);
             assert.deepEqual(getStats(hdr), {
                 "total": 3,
@@ -778,6 +781,7 @@ describe("http", () => {
             var req = get_response();
             assert.equal(req.status, 500);
 
+            coroutine.sleep(100);
             assert.equal(err_500, 1);
             assert.deepEqual(getStats(hdr), {
                 "total": 4,
@@ -906,7 +910,13 @@ describe("http", () => {
             assert.equal(200, rep.status);
             assert.equal(14, rep.length);
 
-            assert.deepEqual(new Date(rep.firstHeader('Last-Modified')), fs.stat(url).mtime);
+            var a = new Date(rep.firstHeader('Last-Modified'));
+            var b = fs.stat(url).mtime;
+
+            a = JSON.stringify(a).split('.')[0];
+            b = JSON.stringify(b).split('.')[0];
+
+            assert.equal(a, b);
         });
 
         it("not modified", () => {
