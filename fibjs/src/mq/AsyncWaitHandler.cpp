@@ -9,15 +9,14 @@
 #include "AsyncWaitHandler.h"
 #include "ifs/mq.h"
 
-namespace fibjs
-{
+namespace fibjs {
 
-#define AC_INIT    0
-#define AC_WAIT    1
-#define AC_END     2
+#define AC_INIT 0
+#define AC_WAIT 1
+#define AC_END 2
 
-result_t AsyncWaitHandler::invoke(object_base *v, obj_ptr<Handler_base> &retVal,
-                                  AsyncEvent *ac)
+result_t AsyncWaitHandler::invoke(object_base* v, obj_ptr<Handler_base>& retVal,
+    AsyncEvent* ac)
 {
     if (!ac)
         return CHECK_ERROR(CALL_E_NOSYNC);
@@ -37,8 +36,7 @@ result_t AsyncWaitHandler::invoke(object_base *v, obj_ptr<Handler_base> &retVal,
 
 result_t AsyncWaitHandler::end()
 {
-    if (m_stat.xchg(AC_END) == AC_WAIT)
-    {
+    if (m_stat.xchg(AC_END) == AC_WAIT) {
         m_as->async(CALL_E_NOSYNC);
         m_as = NULL;
     }
@@ -46,14 +44,13 @@ result_t AsyncWaitHandler::end()
     return 0;
 }
 
-result_t mq_base::await(obj_ptr<Handler_base> &retVal)
+result_t mq_base::await(obj_ptr<Handler_base>& retVal)
 {
     retVal = new AsyncWaitHandler();
     return 0;
 }
 
-class AsyncHandler: public Handler_base
-{
+class AsyncHandler : public Handler_base {
 public:
     AsyncHandler(v8::Local<v8::Function> proc)
     {
@@ -62,8 +59,8 @@ public:
 
 public:
     // Handler_base
-    virtual result_t invoke(object_base *v, obj_ptr<Handler_base> &retVal,
-                            AsyncEvent *ac)
+    virtual result_t invoke(object_base* v, obj_ptr<Handler_base>& retVal,
+        AsyncEvent* ac)
     {
         if (ac)
             return CHECK_ERROR(CALL_E_NOASYNC);
@@ -81,16 +78,16 @@ public:
         v8::Local<v8::Value> args[2];
 
         args[0] = v->wrap();
-        args[1] = createV8Function("done", isolate->m_isolate, _done, retVal->wrap());
+        args[1] = isolate->NewFunction("done", _done, retVal->wrap());
 
         proc->Call(args[0], 2, args);
         return 0;
     }
 
 public:
-    static void _done(const v8::FunctionCallbackInfo<v8::Value> &args)
+    static void _done(const v8::FunctionCallbackInfo<v8::Value>& args)
     {
-        AsyncWait_base *v = AsyncWait_base::getInstance(args.Data()->ToObject());
+        AsyncWait_base* v = AsyncWait_base::getInstance(args.Data()->ToObject());
         if (v)
             v->end();
         args.GetReturnValue().SetUndefined();
