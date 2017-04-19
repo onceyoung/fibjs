@@ -10,8 +10,6 @@ var test_util = require('test_util');
 
 var dbs = "redis://127.0.0.1";
 
-var rdb = db.open(dbs);
-
 function listEquals(list, arr) {
     var arr1 = [];
     var i, v;
@@ -27,7 +25,10 @@ function listEquals(list, arr) {
 }
 
 describe("redis", () => {
+    var rdb;
+
     before(() => {
+        rdb = db.open(dbs);
         var keys = rdb.command("keys", "*").toArray();
         if (keys.length)
             rdb.del(keys);
