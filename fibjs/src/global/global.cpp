@@ -9,6 +9,11 @@
 
 namespace fibjs {
 
+result_t global_base::get_Master(obj_ptr<Worker_base>& retVal)
+{
+    return CALL_RETURN_NULL;
+}
+
 result_t global_base::get_global(v8::Local<v8::Object>& retVal)
 {
     Isolate* isolate = Isolate::current();
@@ -82,7 +87,12 @@ static void sync_stub(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 result_t global_base::sync(v8::Local<v8::Function> func, v8::Local<v8::Function>& retVal)
 {
-    retVal = Isolate::current()->NewFunction("require", sync_stub, func);
+    Isolate* isolate = Isolate::current();
+
+    retVal = isolate->NewFunction("require", sync_stub, func);
+    retVal->SetPrivate(retVal->CreationContext(),
+        v8::Private::ForApi(isolate->m_isolate, isolate->NewFromUtf8("_async")), func);
+
     return 0;
 }
 
