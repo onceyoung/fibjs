@@ -105,7 +105,7 @@ void* init_proc(void* p)
     return FiberBase::fiber_proc(p);
 }
 
-Isolate::Isolate(const char* fname)
+Isolate::Isolate(exlib::string fname)
     : m_id((int32_t)s_iso_id.inc())
     , m_test_setup_bbd(false)
     , m_test_setup_tdd(false)
@@ -118,8 +118,7 @@ Isolate::Isolate(const char* fname)
     , m_flake_host(0)
     , m_flake_count(0)
 {
-    if (fname)
-        m_fname = fname;
+    m_fname = fname;
 
     static v8::Isolate::CreateParams create_params;
     static ShellArrayBufferAllocator array_buffer_allocator;
@@ -154,16 +153,13 @@ void Isolate::init()
     v8::Local<v8::Context> _context = v8::Context::New(m_isolate);
     m_context.Reset(m_isolate, _context);
 
-    v8::Local<v8::Object> glob = _context->Global();
-    m_global.Reset(m_isolate, glob);
-
     v8::Context::Scope context_scope(_context);
+
+    static const char* skips[] = { "Master", "repl", "argv", "__filename", "__dirname", NULL };
+    global_base::class_info().Attach(this, _context->Global(), skips);
 
     m_topSandbox = new SandBox();
     m_topSandbox->initRoot();
-
-    static const char* skips[] = { "repl", "argv", "__filename", "__dirname", "__sbname", NULL };
-    global_base::class_info().Attach(this, glob, skips);
 }
 
 } /* namespace fibjs */

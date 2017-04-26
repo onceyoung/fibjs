@@ -9,10 +9,15 @@
 
 namespace fibjs {
 
+result_t global_base::get_Master(obj_ptr<Worker_base>& retVal)
+{
+    return CALL_RETURN_NULL;
+}
+
 result_t global_base::get_global(v8::Local<v8::Object>& retVal)
 {
     Isolate* isolate = Isolate::current();
-    retVal = v8::Local<v8::Object>::New(isolate->m_isolate, isolate->m_global);
+    retVal = isolate->context()->Global();
     return 0;
 }
 
@@ -43,12 +48,12 @@ static void sync_callback(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 static void sync_stub(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    v8::Isolate* isolate = args.GetIsolate();
+    Isolate* isolate = Isolate::current();
     obj_ptr<Event_base> ev = new Event();
 
-    v8::Local<v8::Object> _data = v8::Object::New(isolate);
+    v8::Local<v8::Object> _data = v8::Object::New(isolate->m_isolate);
 
-    _data->Set(v8::String::NewFromUtf8(isolate, "_ev"), ev->wrap());
+    _data->Set(isolate->NewFromUtf8("_ev"), ev->wrap());
 
     std::vector<v8::Local<v8::Value> > argv;
 
@@ -59,7 +64,7 @@ static void sync_stub(const v8::FunctionCallbackInfo<v8::Value>& args)
     for (i = 0; i < len; i++)
         argv[i] = args[i];
 
-    argv[i] = createV8Function("sync_callback", isolate, sync_callback, _data);
+    argv[i] = isolate->NewFunction("sync_callback", sync_callback, _data);
 
     v8::Local<v8::Function> func = v8::Local<v8::Function>::Cast(args.Data());
 
@@ -71,18 +76,23 @@ static void sync_stub(const v8::FunctionCallbackInfo<v8::Value>& args)
 
     ev->wait();
 
-    v8::Local<v8::Value> error = _data->Get(v8::String::NewFromUtf8(isolate, "_error"));
+    v8::Local<v8::Value> error = _data->Get(isolate->NewFromUtf8("_error"));
 
     if (!error.IsEmpty() && !error->IsUndefined() && !error->IsNull()) {
         args.GetReturnValue().Set(v8::Local<v8::Value>());
-        isolate->ThrowException(error);
+        isolate->m_isolate->ThrowException(error);
     } else
-        args.GetReturnValue().Set(_data->Get(v8::String::NewFromUtf8(isolate, "_result")));
+        args.GetReturnValue().Set(_data->Get(isolate->NewFromUtf8("_result")));
 }
 
 result_t global_base::sync(v8::Local<v8::Function> func, v8::Local<v8::Function>& retVal)
 {
-    retVal = createV8Function("require", Isolate::current()->m_isolate, sync_stub, func);
+    Isolate* isolate = Isolate::current();
+
+    retVal = isolate->NewFunction("require", sync_stub, func);
+    retVal->SetPrivate(retVal->CreationContext(),
+        v8::Private::ForApi(isolate->m_isolate, isolate->NewFromUtf8("_async")), func);
+
     return 0;
 }
 

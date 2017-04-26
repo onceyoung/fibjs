@@ -187,7 +187,7 @@ public:
 
     void Attach(Isolate* isolate, v8::Local<v8::Object> o, const char** skips = NULL)
     {
-        v8::Local<v8::Context> _context = v8::Local<v8::Context>::New(isolate->m_isolate, isolate->m_context);
+        v8::Local<v8::Context> _context = isolate->context();
 
         int32_t i, j;
 
@@ -199,7 +199,7 @@ public:
 
                 if (!skips || !skips[j])
                     o->DefineOwnProperty(_context, isolate->NewFromUtf8(m_cd.cms[i].name),
-                         createV8Function(m_cd.name, isolate->m_isolate, m_cd.cms[i].invoker),
+                         isolate->NewFunction(m_cd.name, m_cd.cms[i].invoker),
                          (v8::PropertyAttribute)(v8::ReadOnly | v8::DontDelete))
                         .IsJust();
             }
